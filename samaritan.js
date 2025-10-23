@@ -103,14 +103,15 @@ var blinkTriangle = function()
     $State.triangle.fadeTo(500, 0).fadeTo(500, 1, blinkTriangle);
 }
 
+var currentPhraseIndex = 0;
+
 var runRandomPhrase = function()
 {
-    // Get a random phrase and execute samaritan
-    var randomIndex = Math.floor(Math.random() * ($State.phraselist.length - 0));
-    while (randomIndex == $State.lastRandomIndex)
-        randomIndex = Math.floor(Math.random() * ($State.phraselist.length - 0));
-    $State.lastRandomIndex = randomIndex;
-    executeSamaritan($State.phraselist[randomIndex]);
+    // Show next phrase in order instead of random
+    if ($State.phraselist && $State.phraselist.length > 0) {
+        executeSamaritan($State.phraselist[currentPhraseIndex]);
+        currentPhraseIndex = (currentPhraseIndex + 1) % $State.phraselist.length;
+    }
 }
 
 var randomTimePhrase = function()
