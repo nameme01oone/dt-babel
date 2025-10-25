@@ -5,7 +5,9 @@ $State = {
     randomInterval: 18000,
     lastRandomIndex: -1,
     randomTimer: null,
-    lastMouseUp: -1
+    lastMouseUp: -1,
+    audioStopTimer: null,
+    audioUnlocked: false
 };
 
 // From Stack Overflow
@@ -39,7 +41,10 @@ function processMessageFromHash()
     var message = decodeURIComponent(window.location.hash.slice(1));
     if (message)
     {
-        setTimeout(function(){executeSamaritan(message);}, $State.wordTime);
+        $State.pendingPhrase = message;
+        if ($State.audioUnlocked) {
+            setTimeout(function(){ executeSamaritan(message); }, $State.wordTime);
+        }
     }
 }
 
@@ -58,7 +63,7 @@ $(document).ready(function(){
     {
         urlMsg = urlMsg.split('%20').join(' ').split('%22').join('').split('%27').join("'");
         $State.phraselist = [urlMsg];
-        setTimeout(function(){executeSamaritan(urlMsg);}, $State.wordTime);
+        $State.pendingPhrase = urlMsg;
     }
     else
     {
@@ -88,10 +93,21 @@ $(document).ready(function(){
                 }
             }
             $State.lastMouseUp = Date.now();
-        }).bind("click", runRandomPhrase);
+        });
 
-        // And do a timed random phrase 
-        randomTimePhrase();
+        // Unlock audio on first interaction, then start first phrase and enable click-to-advance
+        $(document).one("click touchstart", function(){
+            ensureAudioReady().then(function(){
+                if ($State.pendingPhrase) {
+                    executeSamaritan($State.pendingPhrase);
+                    $State.pendingPhrase = null;
+                } else {
+                    runRandomPhrase();
+                }
+                $(document).bind("click", runRandomPhrase);
+                randomTimePhrase();
+            });
+        });
     });
 })
 
@@ -109,6 +125,7 @@ var runRandomPhrase = function()
 {
     // Show next phrase in order instead of random
     if ($State.phraselist && $State.phraselist.length > 0) {
+        ensureAudioReady();
         executeSamaritan($State.phraselist[currentPhraseIndex]);
         currentPhraseIndex = (currentPhraseIndex + 1) % $State.phraselist.length;
     }
@@ -161,6 +178,11 @@ var executeSamaritan = function(phrase)
                 timeStart += wordTime;
             });
 
+            // Start hum audio aligned to first word and stop at sentence end
+            var totalDisplay = timeStart + $State.wordTime;
+            var audioDuration = Math.max(0, totalDisplay - $State.wordAnim);
+            setTimeout(function(){ startHumAudio(audioDuration); }, $State.wordAnim);
+
             // Set a final timer to hide text and show triangle
             setTimeout(function(){
                 // Clear the text
@@ -186,7 +208,115 @@ var executeSamaritan = function(phrase)
                     }
                 });
             },
-            timeStart + $State.wordTime);
+            totalDisplay);
         }
     });
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    $State.humAudio = document.getElementById('humAudio');
+    if ($State.humAudio) {
+        $State.humAudio.addEventListener('loadedmetadata', function(){
+            $State.humDuration = $State.humAudio.duration;
+        });
+        try { $State.humAudio.load(); } catch(e){}
+    }
+});
+
+function ensureAudioReady() {
+    return new Promise(function(resolve){
+        if (!$State.humAudio) {
+            $State.humAudio = document.getElementById('humAudio');
+        }
+        if (!$State.humAudio) { resolve(false); return; }
+        if ($State.audioUnlocked) { resolve(true); return; }
+        var a = $State.humAudio;
+        var prevVol = a.volume;
+        try {
+            a.volume = 0;
+            var p = a.play();
+            if (p && typeof p.then === 'function') {
+                p.then(function(){
+                    a.pause();
+                    a.currentTime = 0;
+                    a.volume = prevVol;
+                    $State.audioUnlocked = true;
+                    resolve(true);
+                }).catch(function(){
+                    a.volume = prevVol;
+                    resolve(false);
+                });
+            } else {
+                a.pause();
+                a.currentTime = 0;
+                a.volume = prevVol;
+                $State.audioUnlocked = true;
+                resolve(true);
+            }
+        } catch(e) {
+            a.volume = prevVol;
+            resolve(false);
+        }
+    });
+}
+
+function stopHumAudio() {
+    if (!$State.humAudio) return;
+    $State.humAudio.pause();
+    $State.humAudio.currentTime = 0;
+    $State.humAudio.playbackRate = 1.0;
+    $State.humAudio.loop = false;
+}
+
+function startHumAudio(desiredDuration) {
+    if (!$State.humAudio) return;
+    if ($State.audioStopTimer !== null) {
+        clearTimeout($State.audioStopTimer);
+        $State.audioStopTimer = null;
+    }
+    try { $State.humAudio.pause(); } catch(e){}
+    $State.humAudio.currentTime = 0;
+
+    var duration = $State.humAudio.duration;
+    var minRate = 0.5, maxRate = 4.0;
+    var desiredRate = (!isNaN(duration) && isFinite(duration) && desiredDuration > 0) ? (duration / desiredDuration) : 1.0;
+    var rate = Math.max(minRate, Math.min(maxRate, desiredRate));
+    try {
+        $State.humAudio.playbackRate = rate;
+    } catch(e) {
+        $State.humAudio.playbackRate = 1.0;
+    }
+
+    // Ensure continuous hum throughout sentence
+    $State.humAudio.loop = true;
+
+    var playPromise = $State.humAudio.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch(function(err){});
+    }
+
+    var fadeMs = Math.min($State.wordAnim, 200);
+    if (fadeMs > 0) {
+        var startVol = $State.humAudio.volume;
+        var steps = 5;
+        var stepMs = Math.max(10, Math.floor(fadeMs / steps));
+        $State.audioStopTimer = setTimeout(function(){
+            var i = 0;
+            var tick = function(){
+                i++;
+                $State.humAudio.volume = Math.max(0, startVol * (1 - i/steps));
+                if (i >= steps) {
+                    stopHumAudio();
+                    $State.humAudio.volume = startVol;
+                } else {
+                    setTimeout(tick, stepMs);
+                }
+            };
+            tick();
+        }, Math.max(0, desiredDuration - fadeMs));
+    } else {
+        $State.audioStopTimer = setTimeout(function(){
+            stopHumAudio();
+        }, Math.max(0, desiredDuration));
+    }
 }
