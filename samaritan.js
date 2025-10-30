@@ -41,10 +41,7 @@ function processMessageFromHash()
     var message = decodeURIComponent(window.location.hash.slice(1));
     if (message)
     {
-        $State.pendingPhrase = message;
-        if ($State.audioUnlocked) {
-            setTimeout(function(){ executeSamaritan(message); }, $State.wordTime);
-        }
+        setTimeout(function(){ executeSamaritan(message); }, $State.wordTime);
     }
 }
 
@@ -63,7 +60,7 @@ $(document).ready(function(){
     {
         urlMsg = urlMsg.split('%20').join(' ').split('%22').join('').split('%27').join("'");
         $State.phraselist = [urlMsg];
-        $State.pendingPhrase = urlMsg;
+        setTimeout(function(){executeSamaritan(urlMsg);}, $State.wordTime);
     }
     else
     {
@@ -93,21 +90,10 @@ $(document).ready(function(){
                 }
             }
             $State.lastMouseUp = Date.now();
-        });
+        }).bind("click", runRandomPhrase);
 
-        // Unlock audio on first interaction, then start first phrase and enable click-to-advance
-        $(document).one("click touchstart", function(){
-            ensureAudioReady().then(function(){
-                if ($State.pendingPhrase) {
-                    executeSamaritan($State.pendingPhrase);
-                    $State.pendingPhrase = null;
-                } else {
-                    runRandomPhrase();
-                }
-                $(document).bind("click", runRandomPhrase);
-                randomTimePhrase();
-            });
-        });
+        // Immediately start first phrase on load; subsequent phrases continue in order
+        runRandomPhrase();
     });
 })
 
@@ -181,7 +167,9 @@ var executeSamaritan = function(phrase)
             // Start hum audio aligned to first word and stop at sentence end
             var totalDisplay = timeStart + $State.wordTime;
             var audioDuration = Math.max(0, totalDisplay - $State.wordAnim);
-            setTimeout(function(){ startHumAudio(audioDuration); }, $State.wordAnim);
+            if ($State.audioUnlocked) {
+                setTimeout(function(){ startHumAudio(audioDuration); }, $State.wordAnim);
+            }
 
             // Set a final timer to hide text and show triangle
             setTimeout(function(){
