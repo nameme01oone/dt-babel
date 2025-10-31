@@ -41,7 +41,8 @@ function processMessageFromHash()
     var message = decodeURIComponent(window.location.hash.slice(1));
     if (message)
     {
-        setTimeout(function(){ executeSamaritan(message); }, $State.wordTime);
+        // 僅記錄待顯示句子，不自動顯示
+        $State.pendingPhrase = message;
     }
 }
 
@@ -92,8 +93,7 @@ $(document).ready(function(){
             $State.lastMouseUp = Date.now();
         }).bind("click", runRandomPhrase);
 
-        // Immediately start first phrase on load; subsequent phrases continue in order
-        runRandomPhrase();
+        // 取消進入頁面即自動顯示，改為僅在點擊時顯示
     });
 })
 
@@ -184,7 +184,6 @@ var executeSamaritan = function(phrase)
                     // Once complete, blink the triangle again and animate the line to original size
                     'done': function(){
                         $State.isText = false;
-                        randomTimePhrase();
 
                         blinkTriangle();
                         $State.line.animate({
