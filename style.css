@@ -51,7 +51,7 @@ p {
 }
 
 #settings {
-    width: auto;
+    width: 30px;
     height: 30px;
     font-size: 10px;
     position: absolute;
@@ -62,9 +62,9 @@ p {
 }
 
 #settings button {
-    width: auto;
-    min-width: 72px;
-    padding: 0 8px;
+    width: 30px;
+    min-width: 0;
+    padding: 0;
     height: 100%;
     background: transparent;
     border: 2px solid currentColor;
@@ -73,9 +73,17 @@ p {
     font-size: 16px;
     line-height: 26px;
     font-family:"magdacleanmono";
-    text-transform: uppercase;
     border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+#settings button svg {
+    display: block;
+    width: 18px;
+    height: 18px;
 }
 
 #settings button:hover { opacity: 0.85; }

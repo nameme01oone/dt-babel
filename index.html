@@ -20,7 +20,13 @@
             <span id="triangle">&#9650</span>
         </div>
         <div id="settings">
-            <button id="muteToggle" aria-pressed="false" title="Mute">MUTE</button>
+            <button id="muteToggle" aria-pressed="false" title="Mute" aria-label="Mute">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path d="M5 9 H9 L14 6 V18 L9 15 H5 Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"></path>
+                    <path d="M16 9 C18 11 18 13 16 15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"></path>
+                    <path d="M18 7 C21 11 21 13 18 17" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"></path>
+                </svg>
+            </button>
         </div>
         <audio id="humAudio" src="harmonic_hum.mp3" preload="auto" playsinline webkit-playsinline></audio>
     </body>

@@ -274,9 +274,12 @@ function applyMuteState() {
     var btn = document.getElementById('muteToggle');
     if (btn) {
         btn.setAttribute('aria-pressed', $State.muted ? 'true' : 'false');
-        // Show action label: UNMUTE when muted, MUTE when unmuted
-        btn.textContent = $State.muted ? 'UNMUTE' : 'MUTE';
+        // Swap icon based on state: muted = speaker with slash; unmuted = speaker with waves
+        var iconUnmuted = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">\n            <path d="M5 9 H9 L14 6 V18 L9 15 H5 Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"></path>\n            <path d="M16 9 C18 11 18 13 16 15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"></path>\n            <path d="M18 7 C21 11 21 13 18 17" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"></path>\n        </svg>';
+        var iconMuted = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">\n            <path d="M5 9 H9 L14 6 V18 L9 15 H5 Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"></path>\n            <path d="M15 7 L22 16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"></path>\n        </svg>';
+        btn.innerHTML = $State.muted ? iconMuted : iconUnmuted;
         btn.title = $State.muted ? 'Unmute' : 'Mute';
+        btn.setAttribute('aria-label', $State.muted ? 'Unmute' : 'Mute');
     }
 }
 
