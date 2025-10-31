@@ -51,12 +51,43 @@ p {
 }
 
 #settings {
-    width: 30px;
+    width: auto;
     height: 30px;
     font-size: 10px;
     position: absolute;
     bottom: 0px;
     right: 0px;
+    color: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#settings button {
+    width: auto;
+    min-width: 72px;
+    padding: 0 8px;
+    height: 100%;
+    background: transparent;
+    border: 2px solid currentColor;
+    color: inherit;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 26px;
+    font-family:"magdacleanmono";
+    text-transform: uppercase;
+    border-radius: 0;
+    transition: color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+#settings button:hover { opacity: 0.85; }
+#settings button:active { opacity: 0.7; }
+#settings button:focus { outline: 1px dotted currentColor; }
+
+/* Unmuted: use red accent to echo triangle */
+#muteToggle[aria-pressed="false"] {
+    color: #F00;
+}
+/* Muted: subdued grey tone */
+#muteToggle[aria-pressed="true"] {
     color: #444;
 }
 

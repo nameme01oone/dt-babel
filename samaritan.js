@@ -7,7 +7,9 @@ $State = {
     randomTimer: null,
     lastMouseUp: -1,
     audioStopTimer: null,
-    audioUnlocked: false
+    audioUnlocked: false,
+    muted: false,
+    humBaseVolume: 1.0
 };
 
 // From Stack Overflow
@@ -92,6 +94,15 @@ $(document).ready(function(){
             }
             $State.lastMouseUp = Date.now();
         }).bind("click", runRandomPhrase);
+
+        // Bind mute toggle button and keyboard shortcut
+        $('#muteToggle').on('click', function(){ toggleMute(); });
+        $(document).on('keydown', function(e){
+            var k = e.key || e.code || '';
+            if (typeof k === 'string' && k.toLowerCase() === 'm') {
+                toggleMute();
+            }
+        });
 
         // 取消進入頁面即自動顯示，改為僅在點擊時顯示
     });
@@ -208,6 +219,11 @@ document.addEventListener('DOMContentLoaded', function(){
         });
         try { $State.humAudio.load(); } catch(e){}
     }
+    try {
+        var m = localStorage.getItem('muted');
+        if (m === '1') $State.muted = true;
+    } catch(e) {}
+    applyMuteState();
 });
 
 function ensureAudioReady() {
@@ -247,6 +263,29 @@ function ensureAudioReady() {
     });
 }
 
+function applyMuteState() {
+    var a = $State.humAudio;
+    if (a) {
+        a.muted = $State.muted;
+        if (!$State.muted) {
+            a.volume = $State.humBaseVolume;
+        }
+    }
+    var btn = document.getElementById('muteToggle');
+    if (btn) {
+        btn.setAttribute('aria-pressed', $State.muted ? 'true' : 'false');
+        // Show action label: UNMUTE when muted, MUTE when unmuted
+        btn.textContent = $State.muted ? 'UNMUTE' : 'MUTE';
+        btn.title = $State.muted ? 'Unmute' : 'Mute';
+    }
+}
+
+function toggleMute() {
+    $State.muted = !$State.muted;
+    try { localStorage.setItem('muted', $State.muted ? '1' : '0'); } catch(e){}
+    applyMuteState();
+}
+
 function stopHumAudio() {
     if (!$State.humAudio) return;
     $State.humAudio.pause();
@@ -277,9 +316,16 @@ function startHumAudio(desiredDuration) {
     // Ensure continuous hum throughout sentence
     $State.humAudio.loop = true;
 
-    var playPromise = $State.humAudio.play();
-    if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch(function(err){});
+    // Apply mute/base volume and respect unlock before play
+    $State.humAudio.muted = $State.muted;
+    if (!$State.muted) {
+        $State.humAudio.volume = $State.humBaseVolume;
+    }
+    if ($State.audioUnlocked) {
+        var playPromise = $State.humAudio.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+            playPromise.catch(function(err){});
+        }
     }
 
     var fadeMs = Math.min($State.wordAnim, 200);
